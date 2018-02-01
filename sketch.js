@@ -155,7 +155,8 @@ class Agent {
 
   move(v) {
     //console.log(v)
-    var prev = Object.assign({}, this.pos);
+    //let prev = Object.assign({}, this.pos);
+    var prev = createVector(this.pos.x, this.pos.y);
     this.pos = this.pos.add(v.mult(this.dt));
     this.grid.update_pos(prev, this.pos, this);
 
