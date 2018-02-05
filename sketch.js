@@ -10,18 +10,53 @@ function mydata() {
   this.some_custom_thing = [];
 }
 
+var start_locs =
+{
+  "Bus Stop" : {
+    "name" : "Bus Stop",
+    "x" : 6,
+    "y" : 3
+  },
+  "Train Stop" : {
+    "name" : "Train Stop",
+    "x" : 10,
+    "y" : 3
+  },
+};
+
+
 var agents_json =
   [
     {
       "name" : "me",
-    "goals" : [0, 1, 2]
-  },
-  {
-    "name" : "you",
-  "goals" : [0, 2]
-  }
-
+      "goals" : ["Starbucks", "Lawson", "Chuncey"],
+      "start_loc" : "Bus Stop"
+    },
+    {
+      "name" : "you",
+      "goals" : ["Starbucks", "Lawson"],
+      "start_loc" : "Train Stop"
+    }
   ];
+
+var goals_json =
+{
+  "Starbucks" : {
+    "name" : "Starbucks",
+    "x" : 6,
+    "y" : 3
+  },
+  "Lawson" : {
+    "name" : "Lawson",
+    "x" : 26,
+    "y" : 4
+  },
+  "Chauncey" : {
+    "name" : "Chauncey",
+    "x" : 28,
+    "y" : 18
+  },
+};
 
 var agents = [];
 var grid;
@@ -31,10 +66,16 @@ function preload() {
   img = loadImage(img_name);
 }
 
+var Sim = {
+  dt : 0.3
+};
+
 function setup() {
   createCanvas(600, 400);
 
-
+  for (var goal in window.goals_json) {
+    console.log(window.goals_json[goal]);
+  }
 
   //drawingContext.shadowOffsetX = 5;
   //drawingContext.shadowOffsetY = -5;
@@ -53,9 +94,11 @@ function setup() {
   grid.populate(img);
   grid.find_path(createVector(4, 3), createVector(25, 5));
 
-  var num = 3;
+  var num = agents_json.length;
   for (var id = 0; id < num; ++id) {
-    agents.push(new Agent(random(width), random(height), len, 5, grid, id));
+    var start = start_locs[agents_json[id].start_loc];
+    agents.push(new Agent(
+      {start_pos : createVector(start.x, start.y).mult(grid.len), len : len, radius : 5, "grid" : grid, "id" : id }));
   }
   // img.write("test.png");
 
@@ -74,7 +117,7 @@ function draw() {
 
     for (var id = 0; id < agents.length; ++id) {
       var agent = agents[id];
-      agent.move(createVector(0, 0, 0));
+      agent.move(createVector(0, 1, 0));
       //agent.display();
     }
     //image(img, 10, 10);
@@ -82,7 +125,7 @@ function draw() {
 
 //function Grid(length, data) {
 function Grid(spec) {
-  var that, len, rows, cols, data, pf_grid;
+  var that, len, rows, cols, data, pf_grid, path;
 
   that = {};
   cols = (function() {
@@ -92,13 +135,15 @@ function Grid(spec) {
   len = spec.len;
   rows = ceil(spec.height/spec.len);
 
+  path = [];
 
-    data = new Array(cols);
-    for (var i = 0; i < cols; ++i) {
-      data[i] = new Array(rows).fill(null).map(() => new spec.data());
-      //console.log(this.data[i])
-    }
+  data = new Array(cols);
+  for (var i = 0; i < cols; ++i) {
+    data[i] = new Array(rows).fill(null).map(() => new spec.data());
+    //console.log(this.data[i])
+  }
 
+  that.len = len;
 
   that.populate = function (img) {
     var x, y;
@@ -112,7 +157,7 @@ function Grid(spec) {
         //console.log(data[x][y])
         var px = img.get(x, y);
         for (var v in px) {
-          console.log(red(px));
+          //console.log(red(px));
         }
         data[x][y].occupied = false;
         if (red(px) < 60) {
@@ -121,7 +166,7 @@ function Grid(spec) {
         matrix[y][x] = (data[x][y].occupied) ? 0 : 1;
       }
     }
-    console.log(matrix)
+    //console.log(matrix)
     pf_grid = new PF.Grid(matrix);
     //img.save('test.png');
   };
@@ -168,9 +213,6 @@ function Grid(spec) {
           if (data[x][y].path) {
             rect(x * len, y * len, len, len);
           }
-          if (x === 4 && y === 3) {
-            rect(x * len, y * len, len, len);
-          }
 
           fill(color(200));
 
@@ -183,14 +225,20 @@ function Grid(spec) {
 
   };
 
+  is_valid = function(pos) {
+    var gpos = get_gpos(pos);
+    return !(gpos.x < 0 || gpos.y < 0 || gpos.x > cols - 1 || gpos.y > (rows - 1));
+  };
+  that.is_valid = is_valid;
+
   get_gpos = function(apos) {
     return createVector(Math.floor(apos.x/len), Math.floor(apos.y/len));
   };
   that.get_gpos = get_gpos;
 
-  that.is_valid = function(gpos) {
-    return (gpos.x >= 0 && gpos.x < cols && gpos.y >= 0 && gpos.x < rows);
-  };
+  // that.is_valid = function(gpos) {
+  //   return (gpos.x >= 0 && gpos.x < cols && gpos.y >= 0 && gpos  .x < rows);
+  // };
 
   that.update_pos = function(prev_pos, curr_pos, entity) {
 
@@ -228,54 +276,79 @@ function Grid(spec) {
 // }
 
 
-class Agent {
+Agent = function (spec) {
   //var sx, sy, len, dt, radius;
   //p5.Vector pos;
+  var that, sx, sy, len, radius, pos, grid, id, gpos, data;
 
-  constructor(px, py, len, radius, grid, id) {
-    this.sx = 0;
-    this.sy = 0;
-    this.len = len;
-    this.dt = 0.3;
-    this.radius = radius;
-    this.pos = createVector(px, py);
-    this.grid = grid;
-    this.id = id;
-    this.grid.place(this.pos, this);
-    this.gpos = grid.get_gpos(this.pos);
-  }
+  sx = 0;
+  sy = 0;
+  len = spec.len;
+  radius = spec.radius;
+  pos = spec.start_pos;
+  grid = spec.grid;
 
-  rm_from_grid(data) {
+  id = spec.id;
+  gpos = grid.get_gpos(pos);
+  data = spec.data;
+
+  // constructor(px, py, len, radius, grid, id) {
+  //   this.sx = 0;
+  //   this.sy = 0;
+  //   this.len = len;
+  //   this.dt = 0.3;
+  //   this.radius = radius;
+  //   this.pos = createVector(px, py);
+  //   this.grid = grid;
+  //   this.id = id;
+  //   this.grid.place(this.pos, this);
+  //   this.gpos = grid.get_gpos(this.pos);
+  // }
+  that = {};
+  that.id = id;
+
+  that.rm_from_grid = function(data) {
     for (var i = 0; i < data.agents.length; ++i) {
-      if (data.agents[i].id === this.id) {
+      if (data.agents[i].id === id) {
         data.agents.splice(i, 1);
         break;
       }
     }
-  }
+  };
 
-  add_to_grid(data) {
-    data.agents.push(this);
-  }
+  that.add_to_grid = function(data) {
+    data.agents.push(that);
+  };
 
-  move(v) {
+  that.move = function(v) {
     //console.log(v)
-    //let prev = Object.assign({}, this.pos);
-    var prev = createVector(this.pos.x, this.pos.y);
-    this.pos = this.pos.add(v.mult(this.dt));
-    this.grid.update_pos(prev, this.pos, this);
+    //let prev = Object.assign({}, pos);
+    var prev = createVector(pos.x, pos.y);
+    pos = pos.add(v.mult(Sim.dt));
+    if (valid(pos)) {
+      console.log(grid.get_gpos(pos));
+      grid.update_pos(prev, pos, that);
+    }
 
-    if (prev.dist(this.pos) > 1e-6)
-      console.log(this.pos);
+    // if (prev.dist(pos) > 1e-6)
+    //   console.log(pos);
+  };
+
+  // function
+  function valid(pos) {
+    return grid.is_valid(pos);
   }
 
-  display() {
+  that.display = function() {
     push();
-    translate(this.pos.x, this.pos.y);
-    var tx = this.sx + this.len * Math.cos(rad(60));
-    var ty = this.sy + this.len * Math.sin(rad(60));
-    triangle(this.sx, this.sy, tx, ty, this.sx + this.len, this.sy);
-    ellipse(tx, ty, this.len * 0.3, this.len * 0.3);
+    translate(pos.x, pos.y);
+    var tx = sx + len * Math.cos(rad(60));
+    var ty = sy + len * Math.sin(rad(60));
+    triangle(sx, sy, tx, ty, sx + len, sy);
+    ellipse(tx, ty, len * 0.3, len * 0.3);
     pop();
-  }
-}
+  };
+
+  grid.place(pos, that);
+  return that;
+};
