@@ -2,7 +2,7 @@
 Agent = function (spec) {
   //var sx, sy, len, dt, radius;
   //p5.Vector pos;
-  var that, sx, sy, len, radius, pos, grid, id, gpos, data, goals;
+  var that, sx, sy, len, radius, pos, grid, id, gpos, data;
   //var path = [];
 
   sx = spec.grid.len * 0.3;
@@ -16,8 +16,8 @@ Agent = function (spec) {
   id = spec.id;
   gpos = grid.get_gpos(pos);
   data = spec.data;
-  goals = spec.goals;
-  path = [];
+  //this.goals = spec.goals;
+  //path = [];
   max_speed = spec.max_speed || 2;
 
   // constructor(px, py, len, radius, grid, id) {
@@ -34,6 +34,10 @@ Agent = function (spec) {
   // }
   that = {};
   that.id = id;
+  that.path = [];
+  that.goals = spec.goals;
+  that.radius = spec.radius;
+  that.pos = pos;
   //that.path = [];
 
   that.rm_from_grid = function(data) {
@@ -50,45 +54,52 @@ Agent = function (spec) {
   };
 
   has_reached_waypoint = function() {
-    if (path.length > 0) {
-      var epsilon = 1;
+    if (that.path.length > 0) {
+      var epsilon = 5;
       var gpos = grid.get_gpos(pos);
-      if (pos.dist(grid.get_pos(path[0])) < epsilon) {
+      if (pos.dist(grid.get_pos(that.path[0])) < epsilon) {
         return true;
       }
     }
     return false;
   };
+  that.has_reached_waypoint = has_reached_waypoint;
 
   path_exists = function() {
-    return (path.length > 0);
+    var v = that.path.length > 0;
+    return v;
   };
   that.path_exists = path_exists;
 
   get_path_vector = function() {
     var path_vec = createVector(0, 0);
-    if (path_exists()) {
-      path_vec = p5.Vector.sub(grid.get_pos(path[0]), pos);
+    if (that.path.length > 0) {
+      path_vec = p5.Vector.sub(grid.get_pos(that.path[0]), pos);
     }
     return path_vec;
   };
   that.get_path_vector = get_path_vector;
 
+  that.set_path = function(path) {
+    that.path = path;
+  };
+
   update_path = function() {
     var those = this;
-    if (!is_finished()) {
-      if (!path_exists()) {
-          path = grid.find_path(grid.get_gpos(pos), goals[0].pos);
-          if (!path_exists()) {
+    if (!(that.is_finished())) {
+      if (!(that.path_exists())) {
+          that.path = grid.find_path(grid.get_gpos(pos), that.goals[0].pos);
+
+          if (!(that.path_exists())) {
             // we're at a place, where we can't reach the next goals
             // so disregard next goal?
-            goals.shift();
+            that.goals.shift();
           }
       } else {
-        if (has_reached_waypoint()) {
-          path.shift();
-          if (!path_exists()) {
-            goals.shift();
+        if (that.has_reached_waypoint()) {
+          that.path.shift();
+          if (!(that.path_exists())) {
+            that.goals.shift();
           }
         }
       }
@@ -98,8 +109,9 @@ Agent = function (spec) {
   that.update_path = update_path;
 
   is_finished = function() {
-    return (goals.length == 0);
+    return (that.goals.length == 0);
   };
+  that.is_finished = is_finished;
 
   that.move = function(v) {
     //console.log(v)
@@ -126,24 +138,24 @@ Agent = function (spec) {
     return grid.is_valid(pos);
   }
 
-  var x = 0;
 
   that.display = function() {
     push();
-    fill('#FF0000');
+
 
     translate(pos.x, pos.y);
     translate(0.5 * grid.len, 0.5 * grid.len);
-    if (goals.length > 0) {
-        text("to : " + goals[0].name);
+    fill('#000000');
+    if (that.goals.length > 0) {
+        text("to : " + that.goals[0].name, sx, 0.5 * grid.len + sy);
     }
     //text("(" + Math.round(pos.x) + "," + Math.round(pos.y) + ")", sx, sy + 10);
-    text("goals : " + goals.length, sx, sy);
+    text("goals : " + that.goals.length, sx, sy);
     //rotate(x);
+    fill('#FF0000');
     rotate(vel.heading() - PI/2.0);
     translate(-2 *sx , -2 * sy + 0.5 * grid.len);
 
-    x+= 0.1;
 
     //translate(sx, sy);
     //translate(sx, sy);

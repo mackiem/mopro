@@ -5,7 +5,7 @@ function mydata() {
   this.some_custom_thing = [];
 }
 
-var start_locs =
+var start_locs_desc =
 {
   "Bus Stop" : {
     "name" : "Bus Stop",
@@ -17,24 +17,27 @@ var start_locs =
     "x" : 10,
     "y" : 3
   },
+
 };
 
 
-var agents_json =
+var agents_desc =
   [
     {
       "name" : "me",
-      "goals" : ["Starbucks", "Lawson", "Chauncey"],
-      "start_loc" : "Bus Stop"
+      "goals" : [ "Chauncey"],
+      "start_loc" : "Bus Stop",
+      "nums" : 10
     },
-    // {
-    //   "name" : "you",
-    //   "goals" : ["Starbucks", "Lawson"],
-    //   "start_loc" : "Train Stop"
-    // }
+    {
+      "name" : "me",
+      "goals" : ["Lawson", "Chauncey"],
+      "start_loc" : "Train Stop",
+      "nums" : 1
+    },
   ];
 
-var goals_json =
+var goals_desc =
 {
   "Starbucks" : {
     "name" : "Starbucks",
@@ -51,20 +54,22 @@ var goals_json =
     "x" : 27,
     "y" : 18
   },
-  "draw_in_grid" : function(spec) {
-    var x = spec.x;
-    var y = spec.y;
-    var len = spec.len;
-    var key = spec.key;
-    var frac = 0.25;
-    fill('#FFFF00');
-    triangle((x + frac) * len, (y + frac) * len, (x+1 - frac) * len, (y + frac) * len, (x + 0.5) * len, (y+1 - frac) * len);
-    fill('#000000');
-    text(key, x * len, y * len);
+
+};
+
+var neighbor = {
+  "separation" : function(spec) {
+    var pos = createVector(spec.agent.pos.x, spec.agent.pos.y);
+    return pos.sub(spec.other.pos);
   }
 };
 
 var waypoint = {
+  "separation" : function(spec) {
+    var constant = 0.1;
+    var vel = createVector(spec.v.x, spec.v.y);
+    return vel.mult(constant);
+  },
   "goal" : function(spec) {
     var agent = spec.agent;
     //var path = agent.path;

@@ -21,9 +21,9 @@ var Sim = {
 function setup() {
   createCanvas(600, 400);
 
-  for (var goal in window.goals_json) {
-    console.log(window.goals_json[goal]);
-  }
+  // for (var goal in window.goals_json) {
+  //   console.log(window.goals_json[goal]);
+  // }
 
   //drawingContext.shadowOffsetX = 5;
   //drawingContext.shadowOffsetY = -5;
@@ -42,29 +42,61 @@ function setup() {
   grid.populate(img);
   grid.find_path(createVector(4, 3), createVector(25, 5));
 
-  grid.populate_json(goals_json);
+  if (!goals_desc["draw_in_grid"]) {
+    goals_desc["draw_in_grid"] = function(spec) {
+      var x = spec.x;
+      var y = spec.y;
+      var len = spec.len;
+      var key = spec.key;
+      var frac = 0.25;
+      fill('#FFFF00');
+      triangle((x + frac) * len, (y + frac) * len, (x+1 - frac) * len, (y + frac) * len, (x + 0.5) * len, (y+1 - frac) * len);
+      fill('#000000');
+      text(key, x * len, y * len);
+    };
+  }
+   if (!start_locs_desc["draw_in_grid"]) {
+     start_locs_desc["draw_in_grid"] = function(spec) {
+       var x = spec.x;
+       var y = spec.y;
+       var len = spec.len;
+       var key = spec.key;
+       var frac = 0.25;
+       fill('#FFFFFF');
+       rect((x + frac) * len, (y + frac) * len,  2 * frac * len, 2 * frac * len);
+       fill('#000000');
+       text(key, x * len, y * len);
+     };
+   }
+  grid.populate_json("goalie", goals_desc);
+  grid.populate_json("start_loc", start_locs_desc);
 
-  var num = agents_json.length;
+  var num = agents_desc.length;
+  var idx = 0;
   for (var id = 0; id < num; ++id) {
-    var start = start_locs[agents_json[id].start_loc];
-    var agoal_keys = agents_json[id].goals;
-    var agoals = [];
-    for (var k = 0; k < agoal_keys.length; ++k) {
-      var g = goals_json[agoal_keys[k]];
-      if (g) {
-        agoals.push({name : g.name, pos : createVector(g.x, g.y)});
+    var a_num = agents_desc[id].nums;
+    for (var n = 0; n < a_num; ++n) {
+      var start = start_locs_desc[agents_desc[id].start_loc];
+      var agoal_keys = agents_desc[id].goals;
+      var agoals = [];
+      for (var k = 0; k < agoal_keys.length; ++k) {
+        var g = goals_desc[agoal_keys[k]];
+        if (g) {
+          agoals.push({name : g.name, pos : createVector(g.x, g.y)});
+        }
       }
-    }
-    agents.push(new Agent(
-      {start_pos : createVector(start.x, start.y).mult(grid.len),
-        len : len,
-        radius : 5,
-        "grid" : grid,
-        "id" : id,
-        "goals" : agoals
-      }
-    )
-  );
+      agents.push(new Agent(
+        {start_pos : createVector(start.x, start.y).mult(grid.len)
+          .add(createVector(random(-grid.len, grid.len), random(-grid.len, grid.len))),
+          len : len,
+          radius : 5,
+          "grid" : grid,
+          "id" : idx++,
+          "goals" : agoals
+        }
+      )
+    );
+  }
 
 }
   // img.write("test.png");
@@ -85,10 +117,37 @@ function draw() {
     for (var id = 0; id < agents.length; ++id) {
       var agent = agents[id];
 
+      var neighbor_vecs = {};
+
+      if (neighbor) {
+        var offset = Math.ceil(agent.radius / grid.len);
+        grid_cells = [];
+        for (var l in neighbor) {
+          neighbor_vecs[l] = createVector(0, 0);
+        }
+        for (var x_off = -offset; x_off <= offset; ++x_off) {
+          for (var y_off = -offset; y_off <= offset; ++y_off) {
+            var center = grid.get_gpos(agent.pos);
+            center.add(createVector(x_off, y_off));
+            if (grid.is_valid(center)) {
+              var cell_data = grid.data[center.x][center.y];
+              for (var i = 0; i < cell_data.agents.length; ++i) {
+                if (agent.id != cell_data.agents[i]) {
+                  for (l in neighbor) {
+                    neighbor_vecs[l].add(neighbor[l]({agent : agent, other : cell_data.agents[i]}));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
       if (waypoint) {
-        var neighbor_v = createVector(0, 0);
+
         var curr_v = createVector(0, 0);
         for (var k in waypoint) {
+          var neighbor_v = (neighbor_vecs[k]) ? neighbor_vecs[k] : createVector(0, 0);
           var v = waypoint[k]({agent : agent, v : neighbor_v});
           curr_v.add(v);
         }

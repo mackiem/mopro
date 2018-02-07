@@ -17,7 +17,7 @@ function Grid(spec) {
     data[i] = new Array(rows).fill(null).map(() => new spec.data());
     //console.log(this.data[i])
   }
-
+  that.data = data;
   that.len = len;
 
   that.populate = function (img) {
@@ -43,23 +43,23 @@ function Grid(spec) {
     //img.save('test.png');
   };
 
-  populate_json = function(json) {
+  populate_json = function(name, json) {
     for (var k in json) {
     //for (var i = 0; i < json.length; ++i) {
       var e = json[k];
       if ((typeof e !== "function") && e.x !== undefined && e.y !== undefined) {
         var x = e.x;
         var y = e.y;
-        if (data[x][y].goalie) {
-          data[x][y].goalie.push(k);
+        if (data[x][y][name]) {
+          data[x][y][name].push(k);
         } else {
-          data[x][y].goalie = [k];
+          data[x][y][name] = [k];
         }
       }
     }
     for (k in json) {
       if (k === "draw_in_grid" && (typeof json[k] === "function")) {
-          draw_funcs.goalie = json[k];
+          draw_funcs[name] = json[k];
       }
     }
 
@@ -106,12 +106,14 @@ function Grid(spec) {
           if (data[x][y].occupied) {
             rect(x * len, y * len, len, len);
           }
-          if (data[x][y].goalie) {
-            for (var i = 0; i < data[x][y].goalie.length; ++i) {
-                draw_funcs.goalie({x: x, y:y, len:len, key:data[x][y].goalie[i]});
+          for (var k in data[x][y]) {
+            if (draw_funcs[k]) {
+              for (var i = 0; i < data[x][y][k].length; ++i) {
+                draw_funcs[k]({x: x, y:y, len:len, key:data[x][y][k][i]});
+              }
             }
-
           }
+
           // fill(color(200, 0, 0));
           // if (data[x][y].path) {
           //   rect(x * len, y * len, len, len);
