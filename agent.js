@@ -88,7 +88,9 @@ Agent = function (spec) {
     var those = this;
     if (!(that.is_finished())) {
       if (!(that.path_exists())) {
-          that.path = grid.find_path(grid.get_gpos(pos), that.goals[0].pos);
+          var from = grid.get_gpos(pos);
+          //grid.is_valid_gpos(from)
+          that.path = grid.find_path(from, that.goals[0].pos);
 
           if (!(that.path_exists())) {
             // we're at a place, where we can't reach the next goals
@@ -125,8 +127,14 @@ Agent = function (spec) {
     pos.add(t);
     vel = t;
     if (valid(pos)) {
-      //console.log(grid.get_gpos(pos));
+      var gpos = grid.get_gpos(pos);
+      if (gpos.y > (grid.rows - 1)) {
+          console.log(gpos);
+      }
+
       grid.update_pos(prev, pos, that);
+    } else {
+      pos = prev;
     }
 
     // if (prev.dist(pos) > 1e-6)
@@ -163,7 +171,10 @@ Agent = function (spec) {
     var ty = sy + len * Math.sin(rad(60));
      triangle(sx, sy, tx, ty, sx + len, sy);
      ellipse(tx, ty, len * 0.3, len * 0.3);
-    //ellipse(sx + grid.len * 0.5, sy + grid.len * 0.5, grid.len *0.5, grid.len *0.5);
+     noFill();
+     stroke('#FF0000');
+     ellipse((sx + tx + sx + len) / 3, (sy + ty + sy) / 3, radius, radius);
+    //ellipse (sx + grid.len * 0.5, sy + grid.len * 0.5, grid.len *0.5, grid.len *0.5);
     fill("#000000");
     var mul = 10;
     //line(sx, sy, sx + vel.x * mul, sy + vel.y * mul);

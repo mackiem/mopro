@@ -1,5 +1,5 @@
 
-var img_name = "x-map.bmp";
+var img_name = "blob.bmp";
 
 function mydata() {
   this.agents = [];
@@ -20,10 +20,20 @@ function mydata() {
 
 var start_locs_desc =
 {
+  "x" : {
+    "name" : "x",
+    "x" : 15,
+    "y" : 10
+  }
+};
+
+
+var start_locs_desca =
+{
   "Bus Stop" : {
     "name" : "Bus Stop",
-    "x" : 6,
-    "y" : 3
+    "x" : 5,
+    "y" : 4
   },
   "Train Stop" : {
     "name" : "Train Stop",
@@ -39,18 +49,27 @@ var agents_desc =
     {
       "name" : "me",
       "goals" : [ "Chauncey"],
-      "start_loc" : "Bus Stop",
+      "start_loc" : "x",
       "nums" : 10
     },
     {
       "name" : "me",
       "goals" : ["Lawson", "Chauncey"],
       "start_loc" : "Train Stop",
-      "nums" : 1
+      "nums" : 0
     },
   ];
+  var goals_desc =
+  {
+    "z" : {
+      "name" : "Z",
+      "x" : 7,
+      "y" : 16
+    }
+  };
 
-var goals_desc =
+
+var goals_desca =
 {
   "Starbucks" : {
     "name" : "Starbucks",
@@ -69,7 +88,6 @@ var goals_desc =
   },
 
 };
-
 
 var neighbor = {
   "separation" : function(spec) {
@@ -105,7 +123,7 @@ var adj = {
 
 var waypoint = {
   "separation" : function(spec) {
-    var constant = 0.08;
+    var constant = 0.4;
     var vel = createVector(spec.v.x, spec.v.y);
     return vel.mult(constant);
   },

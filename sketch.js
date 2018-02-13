@@ -7,10 +7,9 @@ function rad(deg) {
 
 var agents = [];
 var grid;
-var img_name = "x-map.bmp";
 
 function preload() {
-  img = loadImage(img_name);
+  img = loadImage(!img_name ? "x-map.bmp" : img_name);
 }
 
 var Sim = {
@@ -85,11 +84,13 @@ function setup() {
           agoals.push({name : g.name, pos : createVector(g.x, g.y)});
         }
       }
+      var orig_start_pos = createVector(start.x, start.y).mult(grid.len)
+        .add(createVector(random(-grid.len, grid.len), random(-grid.len, grid.len)));
+      orig_start_pos =  grid.is_valid(orig_start_pos) ? orig_start_pos : createVector(start.x, start.y).mult(grid.len);
       agents.push(new Agent(
-        {start_pos : createVector(start.x, start.y).mult(grid.len)
-          .add(createVector(random(-grid.len, grid.len), random(-grid.len, grid.len))),
+        {start_pos : orig_start_pos,
           len : len,
-          radius : 5,
+          radius : grid.len,
           "grid" : grid,
           "id" : idx++,
           "goals" : agoals
@@ -129,7 +130,7 @@ function draw() {
           for (var y_off = -offset; y_off <= offset; ++y_off) {
             var center = grid.get_gpos(agent.pos);
             center.add(createVector(x_off, y_off));
-            if (grid.is_valid(center)) {
+            if (grid.is_valid_gpos(center)) {
               var cell_data = grid.data[center.x][center.y];
               for (var i = 0; i < cell_data.agents.length; ++i) {
                 if (agent.id != cell_data.agents[i]) {
@@ -138,6 +139,7 @@ function draw() {
                   }
                 }
               }
+
             }
           }
         }

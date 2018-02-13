@@ -1,21 +1,8 @@
 
-var img_name = "x-map.bmp";
-
 function mydata() {
   this.agents = [];
   this.goals = [];
   this.some_custom_thing = [];
-  this.signs = [];
-  this.marker = {time : 0,
-     id : -1,
-   };
-   this.marker.draw_this = function(spec) {
-     var x = spec.x;
-     var y = spec.y;
-     var len = spec.len;
-
-       point(x * len + len/2, y * len + len / 2);
-   };
 }
 
 var start_locs_desc =
@@ -70,7 +57,6 @@ var goals_desc =
 
 };
 
-
 var neighbor = {
   "separation" : function(spec) {
     var pos = createVector(spec.agent.pos.x, spec.agent.pos.y);
@@ -78,34 +64,9 @@ var neighbor = {
   }
 };
 
-var calcF = function(i) {
-	var modY = len(displacement[i]);	//distance between goal vector and origin (dont know why origin...)
-	var modX = len(goal.pos - a.pos);
-	var dot_p = displacement[i].dot(goal.pos - a.pos);
-	var F = (1.0 / (1.0 + modY)) * (1.0 + ((dot_p) / (modX * modY)));
-  return F;
-};
-
-//calculate W
-var calcW = function(i)
-{
-	F = calcF(i);
-	denom = 0;
-	for (var m in a.markers) {
-    denom += calcF(m);
-  }
-	return F / denom, denom;
-}
-
-var adj = {
-  "marker" : function(spec) {
-
-  }
-};
-
 var waypoint = {
   "separation" : function(spec) {
-    var constant = 0.08;
+    var constant = 0.05;
     var vel = createVector(spec.v.x, spec.v.y);
     return vel.mult(constant);
   },

@@ -14,11 +14,13 @@ function Grid(spec) {
 
   data = new Array(cols);
   for (var i = 0; i < cols; ++i) {
-    data[i] = new Array(rows).fill(null).map(() => new spec.data());
+    data[i] = new Array(rows).fill(null).map(v => new spec.data());
     //console.log(this.data[i])
   }
   that.data = data;
   that.len = len;
+  that.rows = rows;
+  that.cols = cols;
 
   that.populate = function (img) {
     var x, y;
@@ -112,6 +114,9 @@ function Grid(spec) {
                 draw_funcs[k]({x: x, y:y, len:len, key:data[x][y][k][i]});
               }
             }
+            if (data[x][y][k]["draw_this"]) {
+              data[x][y][k]["draw_this"]({x: x, y:y, len:len, key:data[x][y][k]});
+            }
           }
 
           // fill(color(200, 0, 0));
@@ -130,14 +135,23 @@ function Grid(spec) {
 
   };
 
+  is_valid_gpos =  function(gpos) {
+    return !(gpos.x < 0 || gpos.y < 0 || gpos.x > that.cols - 1 || gpos.y > (that.rows - 1));
+  };
+  that.is_valid_gpos = is_valid_gpos;
+
+
   is_valid = function(pos) {
     if (pos instanceof GPos) {
 
     }
-    var gpos = get_gpos(pos);
-    return !(gpos.x < 0 || gpos.y < 0 || gpos.x > cols - 1 || gpos.y > (rows - 1));
+    var gpos = that.get_gpos(pos);
+    return that.is_valid_gpos(gpos);
+
   };
   that.is_valid = is_valid;
+
+
 
   get_gpos = function(apos) {
     return createVector(Math.floor(apos.x/len), Math.floor(apos.y/len));
@@ -167,6 +181,7 @@ function Grid(spec) {
 
   that.place = function(pos, entity) {
     var curr = get_gpos(pos);
+    if (!is_valid_gpos(curr)) throw "Invalid Grid Coordinates : (" + curr.x + "," + curr.y + ")";
     entity.add_to_grid(data[curr.x][curr.y]);
   };
 
